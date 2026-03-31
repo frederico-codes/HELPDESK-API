@@ -1,13 +1,28 @@
 import { Router } from "express";
-import { CallController } from "@/controllers/calls-controller";
-import { ensureAuthenticated } from "@/middlewares/ensure-authenticated";
-import { verifyUserAuthorization } from "@/middlewares/verify-user-authorization";
+import { createCall, listCalls, updateCallStatus } from "../controllers/calls-controller";
+import { ensureAuthenticated } from "../middlewares/ensure-authenticated";
+import { verifyUserAuthorization } from "../middlewares/verify-user-authorization";
 
-const callsRoutes = Router()
-const callController = new CallController()
 
-callsRoutes.get("/", callController.index)
-callsRoutes.post("/",ensureAuthenticated,verifyUserAuthorization(["customer","admin"]), callController.create)
+const callsRoutes = Router();
 
-export { callsRoutes }
 
+callsRoutes.patch(
+  "/:id/status",
+  ensureAuthenticated,
+  verifyUserAuthorization(["technical", "manager"]),
+  updateCallStatus
+);
+callsRoutes.get(
+  "/",
+  ensureAuthenticated,
+  listCalls
+);
+callsRoutes.post(
+  "/",
+  ensureAuthenticated,
+  verifyUserAuthorization(["customer", "manager"]),
+  createCall
+);
+
+export { callsRoutes };

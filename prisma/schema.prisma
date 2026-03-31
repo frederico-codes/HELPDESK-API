@@ -1,11 +1,10 @@
-// This is your Prisma schema file,
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum UserRole {
@@ -14,20 +13,62 @@ enum UserRole {
   manager
 }
 
-
+enum CallStatus {
+  open
+  in_progress
+  closed
+}
 
 model User {
-  id String @id @default(uuid())
-  name String
-  email String @unique
-  password String
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         UserRole
+  availability String[] @default([])
 
-  role UserRole @default(customer)
- 
+  createdCalls  Call[] @relation("CustomerCalls")
+  assignedCalls Call[] @relation("TechnicianCalls")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-
 
   @@map("users")
 }
+
+model Service {
+  id        String   @id @default(uuid())
+  name      String
+  basePrice Float
+
+  active    Boolean @default(true)
+
+  calls Call[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("services")
+}
+
+model Call {
+  id          String     @id @default(uuid())
+  title       String
+  description String
+  status      CallStatus @default(open)
+
+  customerId   String
+  technicianId String
+  serviceId    String
+
+  // RELAÇÕES
+  customer   User     @relation("CustomerCalls", fields: [customerId], references: [id])
+  technician   User   @relation("TechnicianCalls", fields: [technicianId], references: [id])
+  service    Service  @relation(fields: [serviceId], references: [id])  
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("calls")
+}
+
