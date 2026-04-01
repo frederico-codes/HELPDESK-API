@@ -2,9 +2,17 @@ import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 import { hash } from "bcryptjs";
 
+type UserRole = "customer" | "technical" | "manager";
+
 export class UsersController {
   async create(req: Request, res: Response) {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, availability } = req.body as {
+      name: string;
+      email: string;
+      password: string;
+      role: UserRole;
+      availability?: string[];
+    };
 
     const userAlreadyExists = await prisma.user.findUnique({
       where: { email },
@@ -24,16 +32,18 @@ export class UsersController {
         role,
         availability:
           role === "technical"
-            ? [
-                "08:00",
-                "09:00",
-                "10:00",
-                "11:00",
-                "14:00",
-                "15:00",
-                "16:00",
-                "17:00",
-              ]
+            ? availability && availability.length > 0
+              ? availability
+              : [
+                  "08:00",
+                  "09:00",
+                  "10:00",
+                  "11:00",
+                  "14:00",
+                  "15:00",
+                  "16:00",
+                  "17:00",
+                ]
             : undefined,
       },
     });
@@ -47,12 +57,13 @@ export class UsersController {
     const { role } = req.query;
 
     const users = await prisma.user.findMany({
-      where: role ? { role: String(role) as any } : undefined,
+      where: role ? { role: String(role) as UserRole } : undefined,
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        availability: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -63,14 +74,30 @@ export class UsersController {
 
   async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, availability } = req.body as {
+      name?: string;
+      email?: string;
+      password?: string;
+      role?: UserRole;
+      availability?: string[];
+    };
 
-    const data: any = {};
+    const data: {
+      name?: string;
+      email?: string;
+      password?: string;
+      role?: UserRole;
+      availability?: string[];
+    } = {};
 
     if (name) data.name = name;
     if (email) data.email = email;
     if (role) data.role = role;
     if (password) data.password = await hash(password, 8);
+
+    if (availability) {
+      data.availability = availability;
+    }
 
     const user = await prisma.user.update({
       where: { id },
@@ -80,6 +107,7 @@ export class UsersController {
         name: true,
         email: true,
         role: true,
+        availability: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -88,50 +116,53 @@ export class UsersController {
     return res.json(user);
   }
 
-async delete(req: Request, res: Response) {
-  const { id } = req.params;
+  async delete(req: Request, res: Response) {
+    const { id } = req.params;
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: { role: true },
-  });
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
 
-  if (!user) {
-    return res.status(404).json({ message: "Usuário não encontrado" });
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    if (user.role !== "customer") {
+      return res
+        .status(400)
+        .json({ message: "Apenas clientes podem ser excluídos" });
+    }
+
+    await prisma.call.deleteMany({
+      where: {
+        customerId: id,
+      },
+    });
+
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    return res.status(204).send();
   }
-
-  if (user.role !== "customer") {
-    return res.status(400).json({ message: "Apenas clientes podem ser excluídos" });
-  }
-
-  await prisma.call.deleteMany({
-    where: {
-      customerId: id,
-    },
-  });
-
-  await prisma.user.delete({
-    where: { id },
-  });
-
-  return res.status(204).send();
-}
 
   async listTechnicals(req: Request, res: Response) {
-  const users = await prisma.user.findMany({
-    where: {
-      role: "technical",
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+    const users = await prisma.user.findMany({
+      where: {
+        role: "technical",
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        availability: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
-  return res.json(users);
-}
+    return res.json(users);
+  }
 }
