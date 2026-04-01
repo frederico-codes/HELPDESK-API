@@ -22,6 +22,13 @@ servicesRoutes.get(
   servicesController.index
 );
 
+// buscar um serviço por id
+servicesRoutes.get(
+  "/:id",
+  ensureAuthenticated,
+  servicesController.show
+);
+
 // editar serviço
 servicesRoutes.put(
   "/:id",

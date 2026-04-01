@@ -3,44 +3,75 @@ import { prisma } from "../database/prisma";
 
 export class ServicesController {
 
+  // ✅ Criar serviço
   async create(req: Request, res: Response) {
-    const { name, basePrice } = req.body;
+    const { title, value } = req.body;
+
+    if (!title || !value) {
+      return res.status(400).json({
+        message: "Título e valor são obrigatórios",
+      });
+    }
 
     const service = await prisma.service.create({
       data: {
-        name,
-        basePrice,
+        name: title,
+        basePrice: Number(value),
+        active: true,
       },
     });
 
     return res.status(201).json(service);
   }
 
+  // ✅ Listar serviços ativos
   async index(req: Request, res: Response) {
     const services = await prisma.service.findMany({
       where: {
         active: true,
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
 
     return res.json(services);
   }
 
+  // ✅ Buscar um serviço (para editar)
+  async show(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const service = await prisma.service.findUnique({
+      where: { id },
+    });
+
+    if (!service) {
+      return res.status(404).json({
+        message: "Serviço não encontrado",
+      });
+    }
+
+    return res.json(service);
+  }
+
+  // ✅ Atualizar serviço
   async update(req: Request, res: Response) {
     const { id } = req.params;
-    const { name, basePrice } = req.body;
+    const { title, value } = req.body;
 
     const service = await prisma.service.update({
       where: { id },
       data: {
-        name,
-        basePrice,
+        name: title,
+        basePrice: Number(value),
       },
     });
 
     return res.json(service);
   }
 
+  // ✅ Desativar serviço
   async deactivate(req: Request, res: Response) {
     const { id } = req.params;
 
