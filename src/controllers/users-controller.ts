@@ -165,4 +165,27 @@ export class UsersController {
 
     return res.json(users);
   }
+
+  async show(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        availability: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado" });
+    }
+
+    return res.json(user);
+  }
 }
