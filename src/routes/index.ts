@@ -4,6 +4,7 @@ import { callsRoutes } from "./calls-routes";
 import { sessionsRoutes } from "./session-routes";
 import { servicesRoutes } from "./services-routes";
 import { technicalsRoutes } from "./technicals-routes";
+import { clientsRoutes } from "./clients-routes";
 
 const routes = Router();
 
@@ -12,5 +13,8 @@ routes.use("/calls", callsRoutes);
 routes.use("/sessions", sessionsRoutes);
 routes.use("/services", servicesRoutes);
 routes.use("/technicals", technicalsRoutes);
+routes.use("/clients", clientsRoutes);
+
+
 
 export { routes };

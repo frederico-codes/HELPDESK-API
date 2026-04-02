@@ -24,7 +24,7 @@ model User {
   name         String
   email        String   @unique
   password     String
-  role         UserRole
+  role         UserRole @default(customer)
   availability String[] @default([])
 
   createdCalls  Call[] @relation("CustomerCalls")
