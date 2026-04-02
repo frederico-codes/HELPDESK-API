@@ -1,11 +1,14 @@
 import { Router } from "express";
-import { createCall, listCalls, updateCallStatus } from "../controllers/calls-controller";
+import {
+  createCall,
+  listCalls,
+  listCallById,
+  updateCallStatus,
+} from "../controllers/calls-controller";
 import { ensureAuthenticated } from "../middlewares/ensure-authenticated";
 import { verifyUserAuthorization } from "../middlewares/verify-user-authorization";
 
-
 const callsRoutes = Router();
-
 
 callsRoutes.patch(
   "/:id/status",
@@ -13,11 +16,13 @@ callsRoutes.patch(
   verifyUserAuthorization(["technical", "manager"]),
   updateCallStatus
 );
-callsRoutes.get(
-  "/",
-  ensureAuthenticated,
-  listCalls
-);
+
+// 🔥 PRIMEIRO a rota dinâmica
+callsRoutes.get("/:id", ensureAuthenticated, listCallById);
+
+// 🔥 DEPOIS a rota geral
+callsRoutes.get("/", ensureAuthenticated, listCalls);
+
 callsRoutes.post(
   "/",
   ensureAuthenticated,

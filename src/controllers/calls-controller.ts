@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
-import { Prisma, CallStatus } from "@prisma/client";
+import { CallStatus } from "@prisma/client";
 
 export async function createCall(req: Request, res: Response) {
-  const { title, description, serviceId, technicianId } = req.body;
+  const { title, description, serviceId } = req.body;
   const customerId = req.user.id;
 
-  if (!title || !description || !serviceId || !technicianId) {
+  if (!title || !description || !serviceId) {
     return res.status(400).json({ message: "Dados obrigatórios não informados" });
   }
 
@@ -18,16 +18,15 @@ export async function createCall(req: Request, res: Response) {
     return res.status(400).json({ message: "Serviço inválido ou desativado" });
   }
 
-  const technician = await prisma.user.findUnique({
-    where: { id: technicianId },
-    select: {
-      id: true,
-      role: true,
+  // 🔥 seleciona automaticamente um técnico
+  const technician = await prisma.user.findFirst({
+    where: {
+      role: "technical",
     },
   });
 
-  if (!technician || technician.role !== "technical") {
-    return res.status(400).json({ message: "Técnico inválido" });
+  if (!technician) {
+    return res.status(400).json({ message: "Nenhum técnico disponível" });
   }
 
   const call = await prisma.call.create({
@@ -35,8 +34,17 @@ export async function createCall(req: Request, res: Response) {
       title,
       description,
       serviceId,
-      technicianId,
+      technicianId: technician.id,
       customerId,
+    },
+    include: {
+      technician: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      service: true,
     },
   });
 
@@ -57,27 +65,26 @@ export async function listCalls(req: Request, res: Response) {
     where = { technicianId: userId };
   }
 
-
   const calls = await prisma.call.findMany({
+    where,
     include: {
       technician: {
         select: {
           id: true,
           name: true,
-          email: true,
-          role: true,
         },
       },
       customer: {
         select: {
           id: true,
           name: true,
-          email: true,
-          role: true,
         },
       },
       service: true,
-    }
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 
   return res.json(calls);
@@ -105,6 +112,47 @@ export async function updateCallStatus(req: Request, res: Response) {
     where: { id },
     data: { status: status as CallStatus },
   });
+
+  return res.json(call);
+}
+
+export async function listCallById(req: Request, res: Response) {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const userRole = req.user.role;
+
+  const call = await prisma.call.findUnique({
+    where: { id },
+    include: {
+      technician: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      service: true,
+    },
+  });
+
+  if (!call) {
+    return res.status(404).json({ message: "Chamado não encontrado" });
+  }
+
+  if (userRole === "customer" && call.customerId !== userId) {
+    return res.status(403).json({ message: "Acesso não permitido" });
+  }
+
+  if (userRole === "technical" && call.technicianId !== userId) {
+    return res.status(403).json({ message: "Acesso não permitido" });
+  }
 
   return res.json(call);
 }
