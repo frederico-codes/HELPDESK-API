@@ -188,4 +188,29 @@ export class UsersController {
 
     return res.json(user);
   }
+
+    async updateAvatar(req: Request, res: Response) {
+    const { id } = req.params;
+    const avatarFilename = req.file?.filename;
+
+    if (!avatarFilename) {
+      return res.status(400).json({ message: "Imagem não enviada" });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        avatar: avatarFilename,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+      },
+    });
+
+    return res.json(user);
+  }
 }
