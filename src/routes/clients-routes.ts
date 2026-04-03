@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { ClientsController } from "../controllers/clients-controller";
+import { ensureAuthenticated } from "../middlewares/ensure-authenticated";
 
 const clientsRoutes = Router();
-const clientsController = new ClientsController();
+const clientController = new ClientsController();
 
-clientsRoutes.post("/", clientsController.create);
-clientsRoutes.get("/", clientsController.index);
-clientsRoutes.get("/:id", clientsController.show);
-clientsRoutes.put("/:id", clientsController.update);
-clientsRoutes.delete("/:id", clientsController.delete);
+clientsRoutes.post("/", clientController.create);
+clientsRoutes.get("/", clientController.index);
+clientsRoutes.get("/:id", clientController.show);
+clientsRoutes.put("/:id", ensureAuthenticated, clientController.update);
+clientsRoutes.delete("/:id", ensureAuthenticated, clientController.delete);
 
 export { clientsRoutes };
