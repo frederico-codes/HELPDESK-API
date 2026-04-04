@@ -10,7 +10,7 @@ const usersController = new UsersController();
 technicalsRoutes.get(
   "/",
   ensureAuthenticated,
-  verifyUserAuthorization(["manager"]),
+  verifyUserAuthorization(["manager", "technical"]),
   usersController.listTechnicals
 );
 

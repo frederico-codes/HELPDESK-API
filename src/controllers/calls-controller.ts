@@ -96,7 +96,10 @@ export async function updateCallStatus(req: Request, res: Response) {
 
   const allowedStatus: CallStatus[] = ["open", "in_progress", "closed"];
 
-  if (typeof status !== "string" || !allowedStatus.includes(status as CallStatus)) {
+  if (
+    typeof status !== "string" ||
+    !allowedStatus.includes(status as CallStatus)
+  ) {
     return res.status(400).json({ message: "Status inválido" });
   }
 
@@ -111,6 +114,29 @@ export async function updateCallStatus(req: Request, res: Response) {
   const call = await prisma.call.update({
     where: { id },
     data: { status: status as CallStatus },
+    include: {
+      technician: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          basePrice: true,
+        },
+      },
+    },
   });
 
   return res.json(call);
