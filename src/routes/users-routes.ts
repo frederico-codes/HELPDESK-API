@@ -19,5 +19,10 @@ usersRoutes.patch(
   upload.single("avatar"),
   usersController.updateAvatar
 );
+usersRoutes.patch(
+  "/:id/password",
+  ensureAuthenticated,
+  usersController.updatePassword
+);
 
 export { usersRoutes };

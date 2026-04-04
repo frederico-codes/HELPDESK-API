@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
-import { hash } from "bcryptjs";
+import { hash, compare } from "bcryptjs";
+
 
 type UserRole = "customer" | "technical" | "manager";
 
@@ -20,6 +21,12 @@ export class UsersController {
 
     if (userAlreadyExists) {
       return res.status(400).json({ message: "Usuário já existe" });
+    }
+
+    if (!password || password.trim().length < 6) {
+      return res.status(400).json({
+        message: "A senha deve ter no mínimo 6 caracteres",
+      });
     }
 
     const passwordHash = await hash(password, 8);
@@ -94,10 +101,7 @@ export class UsersController {
     if (email) data.email = email;
     if (role) data.role = role;
     if (password) data.password = await hash(password, 8);
-
-    if (availability) {
-      data.availability = availability;
-    }
+    if (availability) data.availability = availability;
 
     const user = await prisma.user.update({
       where: { id },
@@ -189,7 +193,7 @@ export class UsersController {
     return res.json(user);
   }
 
-    async updateAvatar(req: Request, res: Response) {
+  async updateAvatar(req: Request, res: Response) {
     const { id } = req.params;
     const avatarFilename = req.file?.filename;
 
@@ -212,5 +216,50 @@ export class UsersController {
     });
 
     return res.json(user);
+  }
+
+  async updatePassword(req: Request, res: Response) {
+    const { id } = req.params;
+    const { password, newPassword } = req.body as {
+      password: string;
+      newPassword: string;
+    };
+
+    if (!password || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Informe a senha atual e a nova senha." });
+    }
+
+    if (newPassword.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "A nova senha deve ter no mínimo 6 caracteres." });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuário não encontrado." });
+    }
+
+    const passwordMatched = await compare(password, user.password);
+
+    if (!passwordMatched) {
+      return res.status(400).json({ message: "Senha atual inválida." });
+    }
+
+    const passwordHash = await hash(newPassword, 8);
+
+    await prisma.user.update({
+      where: { id },
+      data: {
+        password: passwordHash,
+      },
+    });
+
+    return res.json({ message: "Senha alterada com sucesso." });
   }
 }

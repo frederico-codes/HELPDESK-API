@@ -51,6 +51,58 @@ export async function createCall(req: Request, res: Response) {
   return res.status(201).json(call);
 }
 
+export async function updateCallStatus(req: Request, res: Response) {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  const allowedStatus: CallStatus[] = ["open", "in_progress", "closed"];
+  
+  if (
+    typeof status !== "string" ||
+    !allowedStatus.includes(status as CallStatus)
+  ) {
+    return res.status(400).json({ message: "Status inválido" });
+  }
+  
+  const callExists = await prisma.call.findUnique({
+    where: { id },
+  });
+  
+  if (!callExists) {
+    return res.status(404).json({ message: "Chamado não encontrado" });
+  }
+  
+  const call = await prisma.call.update({
+    where: { id },
+    data: { status: status as CallStatus },
+    include: {
+      technician: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      service: {
+        select: {
+          id: true,
+          name: true,
+          basePrice: true,
+        },
+      },
+    },
+  });
+  
+  return res.json(call);
+}
+
 export async function listCalls(req: Request, res: Response) {
   const userId = req.user.id;
   const userRole = req.user.role;
@@ -88,58 +140,6 @@ export async function listCalls(req: Request, res: Response) {
   });
 
   return res.json(calls);
-}
-
-export async function updateCallStatus(req: Request, res: Response) {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  const allowedStatus: CallStatus[] = ["open", "in_progress", "closed"];
-
-  if (
-    typeof status !== "string" ||
-    !allowedStatus.includes(status as CallStatus)
-  ) {
-    return res.status(400).json({ message: "Status inválido" });
-  }
-
-  const callExists = await prisma.call.findUnique({
-    where: { id },
-  });
-
-  if (!callExists) {
-    return res.status(404).json({ message: "Chamado não encontrado" });
-  }
-
-  const call = await prisma.call.update({
-    where: { id },
-    data: { status: status as CallStatus },
-    include: {
-      technician: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      customer: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      service: {
-        select: {
-          id: true,
-          name: true,
-          basePrice: true,
-        },
-      },
-    },
-  });
-
-  return res.json(call);
 }
 
 export async function listCallById(req: Request, res: Response) {
