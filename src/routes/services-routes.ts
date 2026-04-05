@@ -45,4 +45,12 @@ servicesRoutes.patch(
   servicesController.deactivate
 );
 
+// reativar serviço
+servicesRoutes.patch(
+  "/:id/activate",
+  ensureAuthenticated,
+  verifyUserAuthorization(["manager"]),
+  servicesController.activate
+);
+
 export { servicesRoutes };

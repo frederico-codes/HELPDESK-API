@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 
 export class ServicesController {
-
   // ✅ Criar serviço
   async create(req: Request, res: Response) {
     const { title, value } = req.body;
@@ -26,10 +25,9 @@ export class ServicesController {
 
   // ✅ Listar serviços ativos
   async index(req: Request, res: Response) {
+    const { includeInactive } = req.query;
     const services = await prisma.service.findMany({
-      where: {
-        active: true,
-      },
+      where: includeInactive === "true" ? {} : { active: true },
       orderBy: {
         createdAt: "desc",
       },
@@ -79,6 +77,20 @@ export class ServicesController {
       where: { id },
       data: {
         active: false,
+      },
+    });
+
+    return res.json(service);
+  }
+
+  // ✅ Reativar serviço
+  async activate(req: Request, res: Response) {
+    const { id } = req.params;
+
+    const service = await prisma.service.update({
+      where: { id },
+      data: {
+        active: true,
       },
     });
 
