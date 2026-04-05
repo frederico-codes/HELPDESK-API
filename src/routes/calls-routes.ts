@@ -4,6 +4,8 @@ import {
   listCalls,
   listCallById,
   updateCallStatus,
+  addAdditionalService,
+  removeAdditionalService,
 } from "../controllers/calls-controller";
 import { ensureAuthenticated } from "../middlewares/ensure-authenticated";
 import { verifyUserAuthorization } from "../middlewares/verify-user-authorization";
@@ -28,6 +30,20 @@ callsRoutes.post(
   ensureAuthenticated,
   verifyUserAuthorization(["customer", "manager"]),
   createCall
+);
+
+callsRoutes.post(
+  "/:id/additional-services",
+  ensureAuthenticated,
+  verifyUserAuthorization(["technical", "manager"]),
+  addAdditionalService
+);
+
+callsRoutes.delete(
+  "/:id/additional-services/:additionalServiceId",
+  ensureAuthenticated,
+  verifyUserAuthorization(["technical", "manager"]),
+  removeAdditionalService
 );
 
 export { callsRoutes };

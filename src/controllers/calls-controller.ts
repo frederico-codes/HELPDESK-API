@@ -7,7 +7,9 @@ export async function createCall(req: Request, res: Response) {
   const customerId = req.user.id;
 
   if (!title || !description || !serviceId) {
-    return res.status(400).json({ message: "Dados obrigatórios não informados" });
+    return res
+      .status(400)
+      .json({ message: "Dados obrigatórios não informados" });
   }
 
   const service = await prisma.service.findUnique({
@@ -15,10 +17,11 @@ export async function createCall(req: Request, res: Response) {
   });
 
   if (!service || !service.active) {
-    return res.status(400).json({ message: "Serviço inválido ou desativado" });
+    return res
+      .status(400)
+      .json({ message: "Serviço inválido ou desativado" });
   }
 
-  // 🔥 seleciona automaticamente um técnico
   const technician = await prisma.user.findFirst({
     where: {
       role: "technical",
@@ -54,24 +57,24 @@ export async function createCall(req: Request, res: Response) {
 export async function updateCallStatus(req: Request, res: Response) {
   const { id } = req.params;
   const { status } = req.body;
-  
+
   const allowedStatus: CallStatus[] = ["open", "in_progress", "closed"];
-  
+
   if (
     typeof status !== "string" ||
     !allowedStatus.includes(status as CallStatus)
   ) {
     return res.status(400).json({ message: "Status inválido" });
   }
-  
+
   const callExists = await prisma.call.findUnique({
     where: { id },
   });
-  
+
   if (!callExists) {
     return res.status(404).json({ message: "Chamado não encontrado" });
   }
-  
+
   const call = await prisma.call.update({
     where: { id },
     data: { status: status as CallStatus },
@@ -97,9 +100,14 @@ export async function updateCallStatus(req: Request, res: Response) {
           basePrice: true,
         },
       },
+      additionalServices: {
+        include: {
+          service: true,
+        },
+      },
     },
   });
-  
+
   return res.json(call);
 }
 
@@ -165,6 +173,11 @@ export async function listCallById(req: Request, res: Response) {
         },
       },
       service: true,
+      additionalServices: {
+        include: {
+          service: true,
+        },
+      },
     },
   });
 
@@ -183,3 +196,61 @@ export async function listCallById(req: Request, res: Response) {
   return res.json(call);
 }
 
+export async function addAdditionalService(req: Request, res: Response) {
+  const { id } = req.params;
+  const { serviceId } = req.body;
+
+  if (!serviceId) {
+    return res.status(400).json({ message: "Serviço não informado." });
+  }
+
+  const call = await prisma.call.findUnique({
+    where: { id },
+  });
+
+  if (!call) {
+    return res.status(404).json({ message: "Chamado não encontrado." });
+  }
+
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+  });
+
+  if (!service || !service.active) {
+    return res
+      .status(400)
+      .json({ message: "Serviço inválido ou desativado." });
+  }
+
+  const additionalService = await prisma.callAdditionalService.create({
+    data: {
+      callId: id,
+      serviceId,
+    },
+    include: {
+      service: true,
+    },
+  });
+
+  return res.status(201).json(additionalService);
+}
+
+export async function removeAdditionalService(req: Request, res: Response) {
+  const { additionalServiceId } = req.params;
+
+  const additionalService = await prisma.callAdditionalService.findUnique({
+    where: { id: additionalServiceId },
+  });
+
+  if (!additionalService) {
+    return res
+      .status(404)
+      .json({ message: "Serviço adicional não encontrado." });
+  }
+
+  await prisma.callAdditionalService.delete({
+    where: { id: additionalServiceId },
+  });
+
+  return res.status(204).send();
+}
