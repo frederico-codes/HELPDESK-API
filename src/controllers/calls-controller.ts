@@ -3,10 +3,10 @@ import { prisma } from "../database/prisma";
 import { CallStatus } from "@prisma/client";
 
 export async function createCall(req: Request, res: Response) {
-  const { title, description, serviceId } = req.body;
+  const { title, description, serviceId, technicianId } = req.body;
   const customerId = req.user.id;
 
-  if (!title || !description || !serviceId) {
+  if (!title || !description || !serviceId || !technicianId) {
     return res
       .status(400)
       .json({ message: "Dados obrigatórios não informados" });
@@ -17,19 +17,15 @@ export async function createCall(req: Request, res: Response) {
   });
 
   if (!service || !service.active) {
-    return res
-      .status(400)
-      .json({ message: "Serviço inválido ou desativado" });
+    return res.status(400).json({ message: "Serviço inválido ou desativado" });
   }
 
-  const technician = await prisma.user.findFirst({
-    where: {
-      role: "technical",
-    },
+  const technician = await prisma.user.findUnique({
+    where: { id: technicianId },
   });
 
-  if (!technician) {
-    return res.status(400).json({ message: "Nenhum técnico disponível" });
+  if (!technician || technician.role !== "technical") {
+    return res.status(400).json({ message: "Técnico inválido." });
   }
 
   const call = await prisma.call.create({
@@ -45,6 +41,7 @@ export async function createCall(req: Request, res: Response) {
         select: {
           id: true,
           name: true,
+          email: true,
         },
       },
       service: true,
