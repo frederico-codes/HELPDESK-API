@@ -1,19 +1,44 @@
 import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 import { hash, compare } from "bcryptjs";
-
+import { z } from "zod";
 
 type UserRole = "customer" | "technical" | "manager";
 
+const userRoleSchema = z.enum(["customer", "technical", "manager"]);
+
+const userIdParamsSchema = z.object({
+  id: z.string().uuid("Id do usuário inválido"),
+});
+
+const createUserSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório"),
+  email: z.string().trim().email("E-mail inválido"),
+  password: z.string().trim().min(6, "A senha deve ter no mínimo 6 caracteres"),
+  role: userRoleSchema.optional(),
+  availability: z.array(z.string()).optional(),
+});
+
+const updateUserSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório").optional(),
+  email: z.string().trim().email("E-mail inválido").optional(),
+  password: z.string().trim().min(6, "A senha deve ter no mínimo 6 caracteres").optional(),
+  role: userRoleSchema.optional(),
+  availability: z.array(z.string()).optional(),
+});
+
+const updatePasswordSchema = z.object({
+  password: z.string().trim().min(1, "Informe a senha atual"),
+  newPassword: z
+    .string()
+    .trim()
+    .min(6, "A nova senha deve ter no mínimo 6 caracteres"),
+});
+
 export class UsersController {
   async create(req: Request, res: Response) {
-    const { name, email, password, role, availability } = req.body as {
-      name: string;
-      email: string;
-      password: string;
-      role: UserRole;
-      availability?: string[];
-    };
+    const { name, email, password, role, availability } =
+      createUserSchema.parse(req.body);
 
     const userAlreadyExists = await prisma.user.findUnique({
       where: { email },
@@ -21,12 +46,6 @@ export class UsersController {
 
     if (userAlreadyExists) {
       return res.status(400).json({ message: "Usuário já existe" });
-    }
-
-    if (!password || password.trim().length < 6) {
-      return res.status(400).json({
-        message: "A senha deve ter no mínimo 6 caracteres",
-      });
     }
 
     const passwordHash = await hash(password, 8);
@@ -81,14 +100,9 @@ export class UsersController {
   }
 
   async update(req: Request, res: Response) {
-    const { id } = req.params;
-    const { name, email, password, role, availability } = req.body as {
-      name?: string;
-      email?: string;
-      password?: string;
-      role?: UserRole;
-      availability?: string[];
-    };
+    const { id } = userIdParamsSchema.parse(req.params);
+    const { name, email, password, role, availability } =
+      updateUserSchema.parse(req.body);
 
     const data: {
       name?: string;
@@ -122,7 +136,7 @@ export class UsersController {
   }
 
   async delete(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id } = userIdParamsSchema.parse(req.params);
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -172,7 +186,7 @@ export class UsersController {
   }
 
   async show(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id } = userIdParamsSchema.parse(req.params);
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -195,7 +209,7 @@ export class UsersController {
   }
 
   async updateAvatar(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id } = userIdParamsSchema.parse(req.params);
     const avatarFilename = req.file?.filename;
 
     if (!avatarFilename) {
@@ -220,23 +234,8 @@ export class UsersController {
   }
 
   async updatePassword(req: Request, res: Response) {
-    const { id } = req.params;
-    const { password, newPassword } = req.body as {
-      password: string;
-      newPassword: string;
-    };
-
-    if (!password || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Informe a senha atual e a nova senha." });
-    }
-
-    if (newPassword.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "A nova senha deve ter no mínimo 6 caracteres." });
-    }
+    const { id } = userIdParamsSchema.parse(req.params);
+    const { password, newPassword } = updatePasswordSchema.parse(req.body);
 
     const user = await prisma.user.findUnique({
       where: { id },

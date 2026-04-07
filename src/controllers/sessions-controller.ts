@@ -9,8 +9,8 @@ import { prisma } from "../database/prisma";
 class SessionsController {
   async create(request: Request, response: Response) {
     const bodySchema = z.object({
-      email: z.string().email({ message: "E-mail inválido" }),
-      password: z.string(),
+      email: z.string().trim().email({ message: "E-mail inválido" }),
+      password: z.string().trim().min(1, { message: "Informe a senha" }),
     });
 
     const { email, password } = bodySchema.parse(request.body);

@@ -1,16 +1,38 @@
 import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 import { CallStatus } from "@prisma/client";
+import { z } from "zod";
+
+const createCallSchema = z.object({
+  title: z.string().trim().min(1, "Título é obrigatório"),
+  description: z.string().trim().min(1, "Descrição é obrigatória"),
+  serviceId: z.string().uuid("Serviço inválido"),
+  technicianId: z.string().uuid("Técnico inválido"),
+});
+
+const updateCallStatusSchema = z.object({
+  status: z.enum(["open", "in_progress", "closed"], {
+    message: "Status inválido",
+  }),
+});
+
+const callIdParamsSchema = z.object({
+  id: z.string().uuid("Id do chamado inválido"),
+});
+
+const addAdditionalServiceSchema = z.object({
+  serviceId: z.string().uuid("Serviço inválido"),
+});
+
+const removeAdditionalServiceParamsSchema = z.object({
+  additionalServiceId: z.string().uuid("Id do serviço adicional inválido"),
+});
 
 export async function createCall(req: Request, res: Response) {
-  const { title, description, serviceId, technicianId } = req.body;
-  const customerId = req.user.id;
+  const { title, description, serviceId, technicianId } =
+    createCallSchema.parse(req.body);
 
-  if (!title || !description || !serviceId || !technicianId) {
-    return res
-      .status(400)
-      .json({ message: "Dados obrigatórios não informados" });
-  }
+  const customerId = req.user.id;
 
   const service = await prisma.service.findUnique({
     where: { id: serviceId },
@@ -52,17 +74,8 @@ export async function createCall(req: Request, res: Response) {
 }
 
 export async function updateCallStatus(req: Request, res: Response) {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  const allowedStatus: CallStatus[] = ["open", "in_progress", "closed"];
-
-  if (
-    typeof status !== "string" ||
-    !allowedStatus.includes(status as CallStatus)
-  ) {
-    return res.status(400).json({ message: "Status inválido" });
-  }
+  const { id } = callIdParamsSchema.parse(req.params);
+  const { status } = updateCallStatusSchema.parse(req.body);
 
   const callExists = await prisma.call.findUnique({
     where: { id },
@@ -148,7 +161,7 @@ export async function listCalls(req: Request, res: Response) {
 }
 
 export async function listCallById(req: Request, res: Response) {
-  const { id } = req.params;
+  const { id } = callIdParamsSchema.parse(req.params);
   const userId = req.user.id;
   const userRole = req.user.role;
 
@@ -194,12 +207,8 @@ export async function listCallById(req: Request, res: Response) {
 }
 
 export async function addAdditionalService(req: Request, res: Response) {
-  const { id } = req.params;
-  const { serviceId } = req.body;
-
-  if (!serviceId) {
-    return res.status(400).json({ message: "Serviço não informado." });
-  }
+  const { id } = callIdParamsSchema.parse(req.params);
+  const { serviceId } = addAdditionalServiceSchema.parse(req.body);
 
   const call = await prisma.call.findUnique({
     where: { id },
@@ -207,6 +216,12 @@ export async function addAdditionalService(req: Request, res: Response) {
 
   if (!call) {
     return res.status(404).json({ message: "Chamado não encontrado." });
+  }
+
+  if (call.status === "closed") {
+    return res.status(400).json({
+      message: "Não é possível adicionar serviços a um chamado encerrado.",
+    });
   }
 
   const service = await prisma.service.findUnique({
@@ -233,7 +248,9 @@ export async function addAdditionalService(req: Request, res: Response) {
 }
 
 export async function removeAdditionalService(req: Request, res: Response) {
-  const { additionalServiceId } = req.params;
+  const { additionalServiceId } = removeAdditionalServiceParamsSchema.parse(
+    req.params
+  );
 
   const additionalService = await prisma.callAdditionalService.findUnique({
     where: { id: additionalServiceId },
@@ -243,6 +260,16 @@ export async function removeAdditionalService(req: Request, res: Response) {
     return res
       .status(404)
       .json({ message: "Serviço adicional não encontrado." });
+  }
+
+  const call = await prisma.call.findUnique({
+    where: { id: additionalService.callId },
+  });
+
+  if (call?.status === "closed") {
+    return res.status(400).json({
+      message: "Não é possível remover serviços de um chamado encerrado.",
+    });
   }
 
   await prisma.callAdditionalService.delete({

@@ -1,10 +1,27 @@
 import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 import { hash } from "bcryptjs";
+import { z } from "zod";
+
+const clientIdParamsSchema = z.object({
+  id: z.string().uuid("Id do cliente inválido"),
+});
+
+const createClientSchema = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório"),
+  email: z.string().trim().email("E-mail inválido"),
+  password: z.string().trim().min(6, "Senha mínima de 6 caracteres"),
+});
+
+const updateClientSchema = z.object({
+  name: z.string().trim().min(1, "Nome obrigatório").optional(),
+  email: z.string().trim().email("E-mail inválido").optional(),
+  password: z.string().trim().min(6, "Senha mínima de 6 caracteres").optional(),
+});
 
 export class ClientsController {
   async create(req: Request, res: Response) {
-    const { name, email, password } = req.body;
+    const { name, email, password } = createClientSchema.parse(req.body);
 
     const userAlreadyExists = await prisma.user.findUnique({
       where: { email },
@@ -55,7 +72,7 @@ export class ClientsController {
   }
 
   async show(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id } = clientIdParamsSchema.parse(req.params);
 
     const client = await prisma.user.findFirst({
       where: {
@@ -80,8 +97,8 @@ export class ClientsController {
   }
 
   async update(req: Request, res: Response) {
-    const { id } = req.params;
-    const { name, email, password } = req.body;
+    const { id } = clientIdParamsSchema.parse(req.params);
+    const { name, email, password } = updateClientSchema.parse(req.body);
 
     const clientExists = await prisma.user.findFirst({
       where: {
@@ -121,7 +138,7 @@ export class ClientsController {
   }
 
   async delete(req: Request, res: Response) {
-    const { id } = req.params;
+    const { id } = clientIdParamsSchema.parse(req.params);
 
     const client = await prisma.user.findFirst({
       where: {
