@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.usersRoutes = void 0;
+const express_1 = require("express");
+const users_controller_1 = require("../controllers/users-controller");
+const multer_1 = __importDefault(require("multer"));
+const upload_1 = require("../configs/upload");
+const ensure_authenticated_1 = require("../middlewares/ensure-authenticated");
+const usersRoutes = (0, express_1.Router)();
+exports.usersRoutes = usersRoutes;
+const usersController = new users_controller_1.UsersController();
+const upload = (0, multer_1.default)(upload_1.multerConfig);
+usersRoutes.post("/", usersController.create);
+usersRoutes.get("/", usersController.index);
+usersRoutes.get("/:id", usersController.show);
+usersRoutes.put("/:id", usersController.update);
+usersRoutes.delete("/:id", usersController.delete);
+usersRoutes.patch("/:id/avatar", ensure_authenticated_1.ensureAuthenticated, upload.single("avatar"), usersController.updateAvatar);
+usersRoutes.patch("/:id/password", ensure_authenticated_1.ensureAuthenticated, usersController.updatePassword);

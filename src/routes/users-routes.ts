@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { UsersController } from "@/controllers/users-controller";
+import { UsersController } from "../controllers/users-controller"
 import multer from "multer";
 import { multerConfig } from "../configs/upload";
 import { ensureAuthenticated } from "../middlewares/ensure-authenticated";

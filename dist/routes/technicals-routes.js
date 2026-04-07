@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.technicalsRoutes = void 0;
+const express_1 = require("express");
+const ensure_authenticated_1 = require("../middlewares/ensure-authenticated");
+const verify_user_authorization_1 = require("../middlewares/verify-user-authorization");
+const users_controller_1 = require("../controllers/users-controller");
+const technicalsRoutes = (0, express_1.Router)();
+exports.technicalsRoutes = technicalsRoutes;
+const usersController = new users_controller_1.UsersController();
+technicalsRoutes.get("/", ensure_authenticated_1.ensureAuthenticated, (0, verify_user_authorization_1.verifyUserAuthorization)(["manager", "technical", "customer"]), usersController.listTechnicals);

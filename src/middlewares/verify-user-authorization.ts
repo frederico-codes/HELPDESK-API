@@ -1,5 +1,5 @@
 import { Response, Request, NextFunction } from "express";
-import { AppError } from "@/utils/app-error";
+import { AppError } from "../utils/app-error";
 
 
 function verifyUserAuthorization(role: string[]) {

@@ -4,7 +4,7 @@ import { sign } from "jsonwebtoken";
 import { authConfig } from "../configs/auth";
 import { compare } from "bcrypt";
 import { z } from "zod";
-import { prisma } from "@/database/prisma";
+import { prisma } from "../database/prisma";
 
 class SessionsController {
   async create(request: Request, response: Response) {
