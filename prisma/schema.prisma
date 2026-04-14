@@ -64,7 +64,7 @@ model Call {
   serviceId    String
 
   // RELAÇÕES
-  customer   User     @relation("CustomerCalls", fields: [customerId], references: [id])
+ customer   User    @relation("CustomerCalls", fields: [customerId], references: [id], onDelete: Cascade)
   technician   User   @relation("TechnicianCalls", fields: [technicianId], references: [id])
   service    Service  @relation(fields: [serviceId], references: [id])  
 
