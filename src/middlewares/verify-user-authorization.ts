@@ -6,7 +6,7 @@ function verifyUserAuthorization(role: string[]) {
 
   return (request: Request, response: Response, next: NextFunction) => {
     if (!request.user || !role.includes(request.user.role)) {
-      throw new AppError("Unauthorization", 401);
+      throw new AppError("Unauthorization", 403);
     }
 
     return next();

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../database/prisma";
 import { hash, compare } from "bcryptjs";
 import { z } from "zod";
+import { AppError } from "@/utils/app-error";
 
 type UserRole = "customer" | "technical" | "manager";
 
@@ -102,7 +103,15 @@ export class UsersController {
   async update(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
     const { name, email, password, role, availability } =
-      updateUserSchema.parse(req.body);
+    updateUserSchema.parse(req.body);
+
+    if (req.user.id !== id && req.user.role !== "manager") {
+      throw new AppError("User not authorized", 403);
+    }
+
+    if (role && req.user.role !== "manager") {
+      throw new AppError("Only managers can change user role", 403);
+    }
 
     const data: {
       name?: string;
@@ -137,6 +146,10 @@ export class UsersController {
 
   async delete(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
+
+    if (req.user.id !== id && req.user.role !== "manager") {
+      throw new AppError("User not authorized", 403);
+    }
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -188,6 +201,10 @@ export class UsersController {
   async show(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
 
+    if (req.user.id !== id && req.user.role !== "manager") {
+      throw new AppError("User not authorized", 403);
+    }
+
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -211,6 +228,10 @@ export class UsersController {
   async updateAvatar(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
     const avatarFilename = req.file?.filename;
+
+    if (req.user.id !== id && req.user.role !== "manager") {
+      throw new AppError("User not authorized", 403);
+    }
 
     if (!avatarFilename) {
       return res.status(400).json({ message: "Imagem não enviada" });
@@ -236,6 +257,10 @@ export class UsersController {
   async updatePassword(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
     const { password, newPassword } = updatePasswordSchema.parse(req.body);
+
+    if (req.user.id !== id && req.user.role !== "manager") {
+      throw new AppError("User not authorized", 403);
+    }
 
     const user = await prisma.user.findUnique({
       where: { id },
