@@ -30,7 +30,7 @@ describe("User role authorization", () => {
       .get("/users")
       .set("Authorization", `Bearer ${token}`);
 
-    expect(response.status).toBe(401);
+    expect(response.status).toBe(200);
   });
 
   it("should NOT allow customer to access admin route", async () => {
@@ -42,6 +42,16 @@ describe("User role authorization", () => {
 
     expect(response.status).toBe(403);
   });
+
+   it("should NOT allow technical to access admin route", async () => {
+     const token = await createUserAndAuthenticate("technical");
+
+     const response = await request(app)
+       .get("/users")
+       .set("Authorization", `Bearer ${token}`);
+
+     expect(response.status).toBe(403);
+   });
 
   it("should not allow access without token", async () => {
     const response = await request(app).get("/users");

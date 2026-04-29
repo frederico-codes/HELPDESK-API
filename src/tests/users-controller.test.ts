@@ -6,8 +6,10 @@ describe("UsersController", () => {
   let user_id: string
 
   afterAll(async () => {
-    await prisma.user.delete({ where: { id: user_id } })
-  })
+    await prisma.user.deleteMany();
+
+    await prisma.$disconnect();
+  });
 
   it("should create a new user sucessfully", async () => {
     const response = await request(app).post("/users").send({
