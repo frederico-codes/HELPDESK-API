@@ -25,7 +25,7 @@ const querySchema = z.object({
 });
 
 export class ServicesController {
-  // ✅ Criar serviço
+ 
   async create(req: Request, res: Response) {
     const parsed = createServiceSchema.safeParse({
       title: req.body.title,
@@ -51,7 +51,7 @@ export class ServicesController {
     return res.status(201).json(service);
   }
 
-  // ✅ Listar serviços
+  
   async index(req: Request, res: Response) {
     const { includeInactive } = querySchema.parse(req.query);
 
@@ -62,10 +62,10 @@ export class ServicesController {
       },
     });
 
-    return res.json(services);
+    return res.status(200).json(services);
   }
 
-  // ✅ Buscar serviço
+ 
   async show(req: Request, res: Response) {
     const { id } = serviceIdParamsSchema.parse(req.params);
 
@@ -79,10 +79,10 @@ export class ServicesController {
       });
     }
 
-    return res.json(service);
+    return res.status(200).json(service);
   }
 
-  // ✅ Atualizar serviço
+  
   async update(req: Request, res: Response) {
     const { id } = serviceIdParamsSchema.parse(req.params);
 
@@ -107,10 +107,10 @@ export class ServicesController {
       },
     });
 
-    return res.json(service);
+    return res.status(200).json(service);
   }
 
-  // ✅ Desativar serviço
+ 
   async deactivate(req: Request, res: Response) {
     const { id } = serviceIdParamsSchema.parse(req.params);
 
@@ -121,10 +121,10 @@ export class ServicesController {
       },
     });
 
-    return res.json(service);
+    return res.status(200).json(service);
   }
 
-  // ✅ Reativar serviço
+
   async activate(req: Request, res: Response) {
     const { id } = serviceIdParamsSchema.parse(req.params);
 
@@ -135,6 +135,6 @@ export class ServicesController {
       },
     });
 
-    return res.json(service);
+    return res.status(200).json(service);
   }
 }

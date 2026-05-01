@@ -23,6 +23,18 @@ async function createUserAndAuthenticate(role: string) {
 
 describe("User role authorization", () => {
 
+   afterAll(async () => {
+     await prisma.user.deleteMany({
+        where: {
+          email: {
+            in: ["manager@test.com", "customer@test.com", "technical@test.com"]
+          }
+        }
+      });
+
+     await prisma.$disconnect();
+   });
+
   it("should allow manager to access protected route", async () => {
     const token = await createUserAndAuthenticate("manager");
 

@@ -16,6 +16,7 @@ class SessionsController {
     const { email, password } = bodySchema.parse(request.body);
 
     const user = await prisma.user.findFirst({ where: { email } });
+    
 
     if (!user) {
       throw new AppError("E-mail ou senha inválido", 401);
@@ -38,14 +39,7 @@ class SessionsController {
       }
     );
 
-    const userWithoutPassword = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      availability: user.availability,
-      avatar: user.avatar,
-    };
+    const { password:hashedPassword, ...userWithoutPassword} = user
 
     response.json({ token, userWithoutPassword });
   }

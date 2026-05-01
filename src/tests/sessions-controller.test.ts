@@ -6,6 +6,12 @@ describe('SessionsController', () => {
   let user_id: string;
 
   afterAll(async () => {
+    await prisma.user.deleteMany({
+      where: {
+        email: 'john.doe@example.com'
+      }
+    });
+
     await prisma.$disconnect();
   });
 
