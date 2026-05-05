@@ -47,46 +47,7 @@ async function main() {
         "15:00",
       ],
     },
-    {
-      name: "Ana Souza",
-      email: "ana@helpdesk.com",
-      availability: ["10:00", "11:00", "12:00", "18:00", "19:00", "20:00"],
-    },
-    {
-      name: "Fernanda Costa",
-      email: "fernanda@helpdesk.com",
-      availability: ["08:00", "09:00", "13:00", "14:00", "15:00"],
-    },
-    {
-      name: "João Pereira",
-      email: "joao@helpdesk.com",
-      availability: ["09:00", "10:00", "11:00", "16:00", "17:00"],
-    },
-    {
-      name: "Lucas Martins",
-      email: "lucas@helpdesk.com",
-      availability: ["07:00", "08:00", "12:00", "13:00", "18:00"],
-    },
-    {
-      name: "Beatriz Alves",
-      email: "beatriz@helpdesk.com",
-      availability: ["10:00", "11:00", "14:00", "15:00", "19:00"],
-    },
-    {
-      name: "Rafael Gomes",
-      email: "rafael@helpdesk.com",
-      availability: ["08:00", "09:00", "10:00", "16:00", "17:00"],
-    },
-    {
-      name: "Juliana Rocha",
-      email: "juliana@helpdesk.com",
-      availability: ["11:00", "12:00", "13:00", "18:00", "19:00"],
-    },
-    {
-      name: "Bruno Fernandes",
-      email: "bruno@helpdesk.com",
-      availability: ["07:00", "08:00", "09:00", "14:00", "15:00"],
-    },
+
   ];
 
   for (const tech of techniciansData) {
@@ -134,6 +95,21 @@ async function main() {
     }
   }
 
+  function generateEmail(name: string) {
+    return (
+      name
+        .toLowerCase()
+        .replaceAll(" ", ".")
+        .replaceAll("ã", "a")
+        .replaceAll("á", "a")
+        .replaceAll("é", "e")
+        .replaceAll("í", "i")
+        .replaceAll("ó", "o")
+        .replaceAll("ú", "u")
+        .replaceAll("ç", "c")
+    );
+  }
+
   const customerNames = [
     "João Oliveira",
     "Maria Santos",
@@ -142,46 +118,23 @@ async function main() {
     "Gabriel Costa",
     "Rafael Ribeiro",
     "Juliana Mendes",
-    "Fernanda Rocha",
-    "Beatriz Carvalho",
-    "Amanda Alves",
-    "Bruno Martins",
-    "Camila Barros",
-    "Diego Nascimento",
-    "Eduardo Batista",
-    "Felipe Gomes",
-    "Gustavo Teixeira",
-    "Helena Duarte",
-    "Isabela Freitas",
-    "José Henrique",
-    "Karina Lopes",
-    "Leonardo Pires",
-    "Marcelo Cardoso",
-    "Natália Campos",
-    "Otávio Monteiro",
-    "Paula Rezende",
-    "Ricardo Farias",
-    "Sabrina Vieira",
-    "Thiago Azevedo",
-    "Vanessa Moura",
-    "William Borges",
+    "Fernanda Rocha",   
   ];
 
-  let count = 1;
+  
 
   for (const name of customerNames) {
     await prisma.user.upsert({
-      where: { email: `customer${count}@helpdesk.com` },
+      where: { email: `${generateEmail(name)}@helpdesk.com` },
       update: {},
       create: {
         name,
-        email: `customer${count}@helpdesk.com`,
+        email: `${generateEmail(name)}@helpdesk.com`,
         password: passwordHash,
         role: "customer",
       },
     });
-
-    count++;
+   
   }
   
 

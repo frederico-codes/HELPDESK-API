@@ -229,6 +229,20 @@ https://sua-api-em-producao.com
 
 ---
 
+## 🌱 Seed de dados
+
+O projeto possui um script de seed que cria usuários iniciais com diferentes níveis de acesso:
+
+- Manager
+- Technician
+- Customer
+
+Para rodar o seed:
+
+```bash
+npx prisma db seed
+```
+
 ## 👨‍💻 Autor
 
 Frederico Nakajima
