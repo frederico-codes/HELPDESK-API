@@ -32,4 +32,11 @@ usersRoutes.patch(
   usersController.updatePassword
 );
 
+usersRoutes.delete(
+  "/managers/:id",
+  ensureAuthenticated,
+  verifyUserAuthorization(["manager"]),
+  usersController.deleteManager
+);
+
 export { usersRoutes };

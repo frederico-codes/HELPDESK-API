@@ -23,7 +23,6 @@ const createUserSchema = z.object({
 const updateUserSchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório").optional(),
   email: z.string().trim().email("E-mail inválido").optional(),
-  password: z.string().trim().min(6, "A senha deve ter no mínimo 6 caracteres").optional(),
   role: userRoleSchema.optional(),
   availability: z.array(z.string()).optional(),
 });
@@ -102,8 +101,8 @@ export class UsersController {
 
   async update(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
-    const { name, email, password, role, availability } =
-    updateUserSchema.parse(req.body);
+    const { name, email,  role, availability } =
+      updateUserSchema.parse(req.body);
 
     if (req.user.id !== id && req.user.role !== "manager") {
       throw new AppError("User not authorized", 403);
@@ -116,7 +115,6 @@ export class UsersController {
     const data: {
       name?: string;
       email?: string;
-      password?: string;
       role?: UserRole;
       availability?: string[];
     } = {};
@@ -124,7 +122,6 @@ export class UsersController {
     if (name) data.name = name;
     if (email) data.email = email;
     if (role) data.role = role;
-    if (password) data.password = await hash(password, 8);
     if (availability) data.availability = availability;
 
     const user = await prisma.user.update({
@@ -256,11 +253,13 @@ export class UsersController {
 
   async updatePassword(req: Request, res: Response) {
     const { id } = userIdParamsSchema.parse(req.params);
-    const { password, newPassword } = updatePasswordSchema.parse(req.body);
 
-    if (req.user.id !== id && req.user.role !== "manager") {
-      throw new AppError("User not authorized", 403);
+    if (req.user.id !== id) {
+      throw new AppError("Você só pode alterar a sua própria senha.", 403);
     }
+
+    const { password, newPassword } = updatePasswordSchema.parse(req.body);    
+ 
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -286,5 +285,47 @@ export class UsersController {
     });
 
     return res.json({ message: "Senha alterada com sucesso." });
+  }
+
+  async deleteManager(req: Request, res: Response) {
+    const { id } = userIdParamsSchema.parse(req.params);
+
+    if (req.user.role !== "manager") {
+      throw new AppError("User not authorized", 403);
+    }
+
+    if (req.user.id === id) {
+      throw new AppError("Você não pode excluir sua própria conta.", 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+
+    if (!user) {
+      throw new AppError("Usuário não encontrado", 404);
+    }
+
+    if (user.role !== "manager") {
+      throw new AppError(
+        "Apenas administradores podem ser excluídos por esta rota.",
+        400,
+      );
+    }
+
+    const managersCount = await prisma.user.count({
+      where: { role: "manager" },
+    });
+
+    if (managersCount <= 1) {
+      throw new AppError("Não é possível excluir o último administrador.", 400);
+    }
+
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    return res.status(204).send();
   }
 }
